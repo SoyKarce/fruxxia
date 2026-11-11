@@ -1,0 +1,12 @@
+[
+    {
+        "brawler": "kit",
+        "type": "trophies",
+        "trophies": 492,
+        "wins": 0,
+        "push_until": 1000,
+        "automatically_pick": false,
+        "win_streak": 0,
+        "playstyle": null
+    }
+]
