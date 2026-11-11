@@ -3,13 +3,24 @@
 
     const BRAND_PATTERNS = [
         [/\bPylaAI\b/gi, "FruxX AI"],
-        [/\bPyla\b/g, "FruxX AI"],
+        [/\bPyla\b/gi, "FruxX AI"],
     ];
     const TEXT_SKIP = new Set(["SCRIPT", "STYLE", "NOSCRIPT"]);
     const BRAND_ATTRIBUTES = ["aria-label", "title", "placeholder", "alt", "data-tooltip"];
 
     function rebrand(value) {
         return BRAND_PATTERNS.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), value);
+    }
+
+    function removeDiscordLinks(root) {
+        if (!(root instanceof Element)) return;
+        const anchors = [];
+        if (root.matches("a")) anchors.push(root);
+        anchors.push(...root.querySelectorAll("a"));
+        anchors.forEach((anchor) => {
+            const label = [anchor.href, anchor.textContent, ...BRAND_ATTRIBUTES.map((attribute) => anchor.getAttribute(attribute) || "")].join(" ");
+            if (/discord/i.test(label)) anchor.remove();
+        });
     }
 
     function updateTextNode(node) {
@@ -37,7 +48,10 @@
             updateTextNode(root);
             return;
         }
-        if (root.nodeType === Node.ELEMENT_NODE) updateElement(root);
+        if (root.nodeType === Node.ELEMENT_NODE) {
+            updateElement(root);
+            removeDiscordLinks(root);
+        }
         if (root.querySelectorAll) root.querySelectorAll("*").forEach(updateElement);
     }
 
@@ -48,10 +62,9 @@
             mutations.forEach((mutation) => {
                 if (mutation.type === "characterData") updateTextNode(mutation.target);
                 if (mutation.type === "attributes") {
-                    const updated = rebrand(mutation.target.getAttribute(mutation.attributeName) || "");
-                    if (updated !== mutation.target.getAttribute(mutation.attributeName)) {
-                        mutation.target.setAttribute(mutation.attributeName, updated);
-                    }
+                    const current = mutation.target.getAttribute(mutation.attributeName) || "";
+                    const updated = rebrand(current);
+                    if (updated !== current) mutation.target.setAttribute(mutation.attributeName, updated);
                 }
                 mutation.addedNodes.forEach((node) => applyBranding(node));
             });
